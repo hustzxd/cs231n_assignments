@@ -45,7 +45,10 @@ class TwoLayerNet(object):
     # weights and biases using the keys 'W1' and 'b1' and second layer weights #
     # and biases using the keys 'W2' and 'b2'.                                 #
     ############################################################################
-    pass
+    self.params['W1'] = weight_scale * np.random.randn(input_dim, hidden_dim)
+    self.params['W2'] = weight_scale * np.random.randn(hidden_dim, num_classes)
+    self.params['b1'] = np.zeros((hidden_dim))
+    self.params['b2'] = np.zeros((num_classes))
     ############################################################################
     #                             END OF YOUR CODE                             #
     ############################################################################
@@ -75,7 +78,9 @@ class TwoLayerNet(object):
     # TODO: Implement the forward pass for the two-layer net, computing the    #
     # class scores for X and storing them in the scores variable.              #
     ############################################################################
-    pass
+    out_forward_1, cache_forward_1 = affine_forward(X, self.params['W1'], self.params['b1'])
+    out_relu_1, cache_relu_1 = relu_forward(out_forward_1)
+    scores, cache_forward_2 = affine_forward(out_relu_1, self.params['W2'], self.params['b2'])
     ############################################################################
     #                             END OF YOUR CODE                             #
     ############################################################################
@@ -95,7 +100,14 @@ class TwoLayerNet(object):
     # automated tests, make sure that your L2 regularization includes a factor #
     # of 0.5 to simplify the expression for the gradient.                      #
     ############################################################################
-    pass
+    loss, dout = softmax_loss(scores, y)
+    loss += self.reg * 0.5 * (np.sum(self.params['W2'] ** 2) + np.sum(self.params['W1'] ** 2))
+    dX2, grads['W2'], grads['b2'] = affine_backward(dout, cache_forward_2)
+    dX2 = relu_backward(dX2, cache_relu_1)
+    dX1, grads['W1'], grads['b1'] = affine_backward(dX2, cache_forward_1)
+
+    grads['W2'] += self.reg * self.params['W2']
+    grads['W1'] += self.reg * self.params['W1']
     ############################################################################
     #                             END OF YOUR CODE                             #
     ############################################################################
@@ -161,7 +173,20 @@ class FullyConnectedNet(object):
     # beta2, etc. Scale parameters should be initialized to one and shift      #
     # parameters should be initialized to zero.                                #
     ############################################################################
-    pass
+    total_dims = [input_dim] + hidden_dims + [num_classes]
+    # print total_dims, input_dim, hidden_dims, num_classes, 'yy'
+    for index in range(len(total_dims)-1):
+        # For the weights and biases
+        index_str = str(index + 1)
+        self.params['W'+index_str] = weight_scale * np.random.randn(total_dims[index], total_dims[index+1])
+        self.params['b'+index_str] = np.zeros((total_dims[index+1]))
+
+    if use_batchnorm:
+        for idx in xrange(self.num_layers-1):
+            p = 'gamma' + np.str(idx+1)
+            self.params[p] = np.ones(total_dims[idx+1])
+            p = 'beta' + np.str(idx+1)
+            self.params[p] = np.zeros(total_dims[idx+1])
     ############################################################################
     #                             END OF YOUR CODE                             #
     ############################################################################
@@ -219,7 +244,23 @@ class FullyConnectedNet(object):
     # self.bn_params[1] to the forward pass for the second batch normalization #
     # layer, etc.                                                              #
     ############################################################################
-    pass
+    cache = {}
+    out_forward = X
+    for idx in xrange(self.num_layers-1):
+      idx_str = str(idx + 1)
+      out_forward, cache['affine_'+idx_str]=\
+      affine_forward(out_forward, self.params['W'+idx_str], self.params['b'+idx_str])
+      #Batch-norm layer
+      if self.use_batchnorm:
+        out_forward, cache['bn_'+idx_str] =\
+        batchnorm_forward(out_forward,self.params['gamma'+idx_str], self.params['beta'+idx_str])
+      #ReLu layer
+      out_forward, cache['relu_'+idx_str] = relu_forward(out_forward)
+    #Last affine layer
+    idx_str = str(self.num_layers)
+    out_forward, cache['affine_'+idx_str] = \
+    affine_forward(out_forward, self.params['W'+idx_str], self.params['b'+idx_str])
+    scores = out_forward
     ############################################################################
     #                             END OF YOUR CODE                             #
     ############################################################################
@@ -242,7 +283,20 @@ class FullyConnectedNet(object):
     # automated tests, make sure that your L2 regularization includes a factor #
     # of 0.5 to simplify the expression for the gradient.                      #
     ############################################################################
-    pass
+    loss, dout = softmax_loss(scores, y)
+    dout, grads['W'+idx_str], grads['b'+idx_str] = \
+    affine_backward(dout, cache['affine_'+idx_str])
+    for idx in xrange(self.num_layers-2, -1, -1):
+      idx_str = str(idx+1)
+      loss += self.reg * 0.5 * np.sum(self.params['W'+idx_str] ** 2)
+      # ReLU activation
+      dout = relu_backward(dout, cache['relu_'+idx_str])
+      if self.use_batchnorm:
+        dout, grads['gamma'+idx_str], grads['beta'+idx_str] = batchnorm_backward(dout, cache['bn_'+idx_str])
+      # dW_index and db_index
+      dout, grads['W'+idx_str], grads['b'+idx_str] = affine_backward(dout, cache['affine_'+idx_str])
+      grads['W'+idx_str] += self.reg * self.params['W'+idx_str]
+
     ############################################################################
     #                             END OF YOUR CODE                             #
     ############################################################################

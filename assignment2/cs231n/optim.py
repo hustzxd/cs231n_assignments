@@ -47,7 +47,7 @@ def sgd(w, dw, config=None):
 def sgd_momentum(w, dw, config=None):
   """
   Performs stochastic gradient descent with momentum.
-
+  dongji dongliang
   config format:
   - learning_rate: Scalar learning rate.
   - momentum: Scalar between 0 and 1 giving the momentum value.
@@ -65,7 +65,7 @@ def sgd_momentum(w, dw, config=None):
   # TODO: Implement the momentum update formula. Store the updated value in   #
   # the next_w variable. You should also use and update the velocity v.       #
   #############################################################################
-  pass
+  
   #############################################################################
   #                             END OF YOUR CODE                              #
   #############################################################################
