@@ -253,7 +253,7 @@ class FullyConnectedNet(object):
       #Batch-norm layer
       if self.use_batchnorm:
         out_forward, cache['bn_'+idx_str] =\
-        batchnorm_forward(out_forward,self.params['gamma'+idx_str], self.params['beta'+idx_str])
+        batchnorm_forward(out_forward,self.params['gamma'+idx_str], self.params['beta'+idx_str],self.bn_params[idx])
       #ReLu layer
       out_forward, cache['relu_'+idx_str] = relu_forward(out_forward)
     #Last affine layer
